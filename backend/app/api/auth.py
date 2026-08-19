@@ -47,7 +47,11 @@ def google_auth_callback(code: str, state: str = None, db: Session = Depends(get
     fetched_name = user_info.get("name")
     fetched_picture = user_info.get("picture")
 
-    account = db.query(GmailAccount).filter(GmailAccount.user_id == user.id).first()
+    account = db.query(GmailAccount).filter(
+        GmailAccount.user_id == user.id,
+        GmailAccount.email_address == fetched_email
+    ).first()
+    
     if not account:
         account = GmailAccount(
             user_id=user.id,
@@ -64,7 +68,6 @@ def google_auth_callback(code: str, state: str = None, db: Session = Depends(get
         db.add(account)
     else:
         account.access_token = credentials.token
-        account.email_address = fetched_email
         account.name = fetched_name
         account.picture_url = fetched_picture
         if credentials.refresh_token:
@@ -73,9 +76,22 @@ def google_auth_callback(code: str, state: str = None, db: Session = Depends(get
     db.commit()
     return RedirectResponse("http://localhost:5173/?auth=success")
 
+@router.get("/accounts")
+def get_user_accounts(db: Session = Depends(get_db)):
+    user_id = 1
+    accounts = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).all()
+    
+    return [{
+        "id": a.id,
+        "email_address": a.email_address,
+        "name": a.name,
+        "picture_url": a.picture_url
+    } for a in accounts]
+
 @router.get("/me")
 def get_current_user_profile(db: Session = Depends(get_db)):
     user_id = 1
+    # Fallback for backwards compatibility in frontend, return the first account
     account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
     if not account:
         return {"connected": False}

@@ -7,10 +7,17 @@ from app.models import GmailAccount
 
 router = APIRouter()
 
+from typing import Optional
+
 @router.post("/sync")
-def trigger_sync(db: Session = Depends(get_db)):
+def trigger_sync(account_id: Optional[int] = None, db: Session = Depends(get_db)):
     user_id = 1 # MVP hardcoded user
-    account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
+    
+    if account_id:
+        account = db.query(GmailAccount).filter(GmailAccount.id == account_id, GmailAccount.user_id == user_id).first()
+    else:
+        account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
+        
     if not account:
         raise HTTPException(status_code=400, detail="Account not linked")
         

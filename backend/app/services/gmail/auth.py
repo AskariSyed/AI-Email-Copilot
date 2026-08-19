@@ -32,8 +32,10 @@ def get_google_auth_flow():
     flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
     return flow
 
-# In-memory store for MVP
-OAUTH_FLOW_STATE = {}
+import json
+import os
+
+STATE_FILE = "oauth_state.json"
 
 def get_auth_url():
     flow = get_google_auth_flow()
@@ -42,12 +44,32 @@ def get_auth_url():
         include_granted_scopes='true',
         prompt='consent'
     )
-    OAUTH_FLOW_STATE[state] = getattr(flow, 'code_verifier', None)
+    
+    state_dict = {}
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                state_dict = json.load(f)
+        except:
+            pass
+            
+    state_dict[state] = getattr(flow, 'code_verifier', None)
+    with open(STATE_FILE, "w") as f:
+        json.dump(state_dict, f)
+        
     return auth_url, state
 
 def get_credentials_from_code(code: str, state: str = None):
     flow = get_google_auth_flow()
-    if state and state in OAUTH_FLOW_STATE:
-        flow.code_verifier = OAUTH_FLOW_STATE[state]
+    
+    if state and os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                state_dict = json.load(f)
+            if state in state_dict and state_dict[state]:
+                flow.code_verifier = state_dict[state]
+        except Exception as e:
+            print("Error loading state:", e)
+
     flow.fetch_token(code=code)
     return flow.credentials

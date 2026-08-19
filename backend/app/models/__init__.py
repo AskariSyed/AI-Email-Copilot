@@ -16,7 +16,7 @@ class User(Base):
 class GmailAccount(Base):
     __tablename__ = "gmail_accounts"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     email_address = Column(String, unique=True, index=True)
     name = Column(String, nullable=True)
     picture_url = Column(String, nullable=True)

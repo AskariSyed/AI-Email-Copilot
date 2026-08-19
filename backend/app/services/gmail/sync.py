@@ -86,6 +86,8 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         sender = headers.get('from', '')
         subject = headers.get('subject', '')
         date_str = headers.get('date', '')
+        reply_to = headers.get('reply-to', None)
+        references = headers.get('references', None)
         
         # Extract body
         raw_body = extract_body(msg['payload'])
@@ -113,7 +115,9 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
             direction=direction,
             body=raw_body,
             cleaned_body=cleaned_body,
-            snippet=msg.get('snippet', '')
+            snippet=msg.get('snippet', ''),
+            reply_to=reply_to,
+            references=references
         )
         db.add(email_obj)
         db.flush()
@@ -121,6 +125,47 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         # Now chunk it and generate embeddings!
         from app.services.embeddings.manager import process_email_embeddings
         process_email_embeddings(db, email_obj)
+        
+        # Auto-Drafting Logic
+        if direction == "incoming" and "INBOX" in (email_obj.labels or []):
+            from app.core.scheduler import scheduler
+            from app.core.database import SessionLocal
+            from app.services.llm.generator import generate_email_draft
+            from app.models import Draft
+            
+            def background_draft(email_id: int):
+                bg_db = SessionLocal()
+                try:
+                    email = bg_db.query(Email).filter(Email.id == email_id).first()
+                    if not email:
+                        return
+                        
+                    result = generate_email_draft(
+                        db=bg_db,
+                        user_id=1,
+                        incoming_email_text=email.cleaned_body,
+                        sender=email.sender,
+                        thread_id=email.thread_id,
+                        instructions=""
+                    )
+                    
+                    draft = Draft(
+                        user_id=1,
+                        original_email_id=email_id,
+                        subject=f"Re: {email.subject}",
+                        body=result['generated_body'],
+                        status='generated'
+                    )
+                    bg_db.add(draft)
+                    bg_db.commit()
+                except Exception as e:
+                    import logging
+                    logging.error(f"Auto-drafting failed for email {email_id}: {e}")
+                finally:
+                    bg_db.close()
+                    
+            if scheduler.running:
+                scheduler.add_job(background_draft, args=[email_obj.id])
         
     account.last_synced_at = datetime.now(timezone.utc)
     db.commit()

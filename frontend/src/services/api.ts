@@ -15,8 +15,9 @@ export interface EmailDetail extends Email {
   thread_id: string;
 }
 
-export const fetchEmails = async (skip: number = 0, limit: number = 20): Promise<Email[]> => {
-  const response = await fetch(`${API_URL}/emails?skip=${skip}&limit=${limit}`);
+export const fetchEmails = async (skip: number = 0, limit: number = 20, accountId?: number): Promise<Email[]> => {
+  const url = accountId ? `${API_URL}/emails?skip=${skip}&limit=${limit}&account_id=${accountId}` : `${API_URL}/emails?skip=${skip}&limit=${limit}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Failed to fetch emails');
   return response.json();
 };
@@ -37,9 +38,34 @@ export const generateDraft = async (id: number, instructions: string) => {
   return response.json();
 };
 
-export const syncGmail = async () => {
-  // Assuming user 1 for MVP
-  const response = await fetch(`${API_URL}/gmail/sync`, { method: 'POST' });
+export const sendEmailReply = async (id: number, body: string, draftId?: number) => {
+  const payload: any = { body };
+  if (draftId) payload.draft_id = draftId;
+  
+  const response = await fetch(`${API_URL}/emails/${id}/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error('Failed to send email');
+  return response.json();
+};
+
+export const chatWithInbox = async (query: string, accountId?: number) => {
+  const payload: any = { query };
+  if (accountId) payload.account_id = accountId;
+  const response = await fetch(`${API_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error('Failed to chat');
+  return response.json();
+};
+
+export const syncGmail = async (accountId?: number) => {
+  const url = accountId ? `${API_URL}/gmail/sync?account_id=${accountId}` : `${API_URL}/gmail/sync`;
+  const response = await fetch(url, { method: 'POST' });
   if (!response.ok) throw new Error('Sync failed');
   return response.json();
 };
@@ -53,6 +79,12 @@ export const getAuthUrl = async (): Promise<{ url: string }> => {
 export const fetchAuthStatus = async () => {
   const response = await fetch(`${API_URL}/auth/me`);
   if (!response.ok) throw new Error('Failed to fetch auth status');
+  return response.json();
+};
+
+export const fetchAccounts = async () => {
+  const response = await fetch(`${API_URL}/auth/accounts`);
+  if (!response.ok) throw new Error('Failed to fetch accounts');
   return response.json();
 };
 

@@ -21,9 +21,12 @@ class EmailResponse(BaseModel):
 from sqlalchemy import cast, String
 
 @router.get("", response_model=List[EmailResponse])
-def get_emails(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    # For MVP, just return recent INBOX emails (assuming user 1)
-    emails = db.query(Email).filter(
+def get_emails(skip: int = 0, limit: int = 20, account_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(Email).join(EmailThread)
+    if account_id:
+        query = query.filter(EmailThread.gmail_account_id == account_id)
+        
+    emails = query.filter(
         cast(Email.labels, String).ilike('%"INBOX"%')
     ).order_by(Email.timestamp.desc()).offset(skip).limit(limit).all()
     return emails
