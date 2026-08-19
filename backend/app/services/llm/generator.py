@@ -49,13 +49,32 @@ def generate_email_draft(
     {instructions if instructions else 'Generate a polite and appropriate reply based on the context.'}
     """
     
-    response = client.chat.completions.create(
-        model=settings.LLM_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-    )
+    import time
+    import random
+    
+    max_retries = 5
+    response = None
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+            break
+        except Exception as e:
+            if "429" in str(e) or "rate_limit" in str(e).lower():
+                if attempt < max_retries - 1:
+                    sleep_time = (2 ** attempt) * 5 + random.uniform(1, 5) # 5s, 10s, 20s, 40s
+                    print(f"Rate limited. Sleeping for {sleep_time:.2f} seconds before retry {attempt + 1}/{max_retries}...")
+                    time.sleep(sleep_time)
+                else:
+                    raise e
+            else:
+                raise e
     
     return {
         "generated_body": response.choices[0].message.content,

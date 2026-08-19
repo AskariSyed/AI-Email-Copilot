@@ -59,6 +59,7 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
     messages = results.get('messages', [])
     
     thread_cache = {}
+    drafts_generated = 0
     
     for msg_meta in messages:
         msg_id = msg_meta['id']
@@ -74,9 +75,15 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         else:
             thread = db.query(EmailThread).filter(EmailThread.gmail_thread_id == thread_id).first()
             if not thread:
-                thread = EmailThread(gmail_account_id=account.id, gmail_thread_id=thread_id)
-                db.add(thread)
-                db.flush()
+                import sqlalchemy
+                try:
+                    with db.begin_nested():
+                        thread = EmailThread(gmail_account_id=account.id, gmail_thread_id=thread_id)
+                        db.add(thread)
+                        db.flush()
+                except sqlalchemy.exc.IntegrityError:
+                    # Caught a unique constraint violation, meaning it was just created concurrently
+                    thread = db.query(EmailThread).filter(EmailThread.gmail_thread_id == thread_id).first()
             thread_cache[thread_id] = thread
             
         # Fetch full message
@@ -127,7 +134,10 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         process_email_embeddings(db, email_obj)
         
         # Auto-Drafting Logic
-        if direction == "incoming" and "INBOX" in (email_obj.labels or []):
+        # Only auto-draft recent emails (last 24 hours) and limit to top 10 per sync to avoid rate limits
+        from datetime import timedelta
+        if direction == "incoming" and "INBOX" in (email_obj.labels or []) and drafts_generated < 10 and (datetime.now(timezone.utc) - timestamp < timedelta(days=1)):
+            drafts_generated += 1
             from app.core.scheduler import scheduler
             from app.core.database import SessionLocal
             from app.services.llm.generator import generate_email_draft

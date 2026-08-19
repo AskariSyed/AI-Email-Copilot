@@ -33,6 +33,26 @@ function App() {
   const [account, setAccount] = useState<any>(null);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [activeAccountId, setActiveAccountId] = useState<number | null>(null);
+  const [inboxWidth, setInboxWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+       let newWidth = e.clientX;
+       if (newWidth < 250) newWidth = 250;
+       if (newWidth > 800) newWidth = 800;
+       setInboxWidth(newWidth);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -326,8 +346,13 @@ function App() {
         {activeTab === "inbox" && (
           <>
             {/* Inbox List */}
-            <div className="w-[400px] flex-none border-r border-slate-200/60 bg-white/40 backdrop-blur-sm flex flex-col h-full z-10">
-              <div className="p-4 flex justify-between items-center bg-white/50 border-b border-slate-100">
+            <div style={{ width: inboxWidth }} className={`flex-none bg-white/40 backdrop-blur-sm flex flex-col h-full z-10 relative ${isResizing ? 'select-none' : ''}`}>
+              {/* Resizer Handle */}
+              <div 
+                onMouseDown={(e) => { e.preventDefault(); setIsResizing(true); }}
+                className="absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-300 active:bg-indigo-500 z-50 border-r border-slate-200/60 transition-colors"
+              />
+              <div className="p-4 flex justify-between items-center bg-white/50 border-b border-slate-100 pr-6">
                 <h2 className="text-lg font-bold text-slate-800">Inbox</h2>
                 {loading && <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
               </div>
