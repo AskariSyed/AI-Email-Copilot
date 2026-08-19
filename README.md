@@ -9,7 +9,10 @@ An intelligent, context-aware AI assistant that plugs directly into your Gmail a
 - **AI Style Profile**: Provide permanent global instructions to the AI (e.g., "Keep it short", "Use bullet points") that apply to every draft it writes.
 - **Secure HTML Rendering**: Reads rich HTML emails beautifully while isolating malicious scripts in a sandboxed iframe.
 - **Infinite Scroll Inbox**: Seamlessly scroll through massive archives of emails directly from your local database.
-- **Premium UI/UX**: Built with a stunning, modern glassmorphic interface featuring micro-animations, gradients, and dynamic hover states.
+- **Multi-Account Support**: Link multiple Gmail accounts simultaneously and switch between them instantly.
+- **Inbox AI Chat**: A dedicated chat interface to talk directly to your inbox. Ask questions like "What was the latest on the Q3 report?" and get answers with clickable source citations.
+- **Background Auto-Drafting**: Uses `APScheduler` to run a background job that automatically drafts responses for your most recent incoming emails without you having to click a button.
+- **Premium UI/UX**: Built with a stunning, modern glassmorphic interface featuring resizable sliding panels, micro-animations, gradients, and dynamic hover states.
 
 ## 🛠️ Technology Stack
 
@@ -19,6 +22,7 @@ An intelligent, context-aware AI assistant that plugs directly into your Gmail a
 - **ORM**: SQLAlchemy + Alembic for migrations
 - **AI/LLM**: Groq API (Llama/GPT OSS models) for lightning-fast text generation
 - **Embeddings**: `sentence-transformers` (`all-MiniLM-L6-v2`) running locally for privacy and cost-efficiency
+- **Background Tasks**: `APScheduler` for asynchronous email syncing and auto-drafting
 - **Integrations**: Google Auth & Gmail API
 
 ### Frontend
