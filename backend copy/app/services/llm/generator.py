@@ -4,10 +4,7 @@ from app.services.rag.retriever import retrieve_context
 from sqlalchemy.orm import Session
 from app.models import StyleProfile
 
-client = OpenAI(
-    api_key=settings.LLM_API_KEY,
-    base_url=settings.LLM_BASE_URL
-)
+client = OpenAI(api_key=settings.LLM_API_KEY)
 
 def generate_email_draft(
     db: Session, 
@@ -22,12 +19,6 @@ def generate_email_draft(
     style_profile_obj = db.query(StyleProfile).filter(StyleProfile.user_id == user_id).first()
     style_data = style_profile_obj.profile_data if style_profile_obj else {}
     
-    # Truncate strings to prevent huge prompts exceeding token limits
-    safe_thread_history = str(context['thread_history'])[:1500]
-    safe_sender_history = str(context['sender_history'])[:1500]
-    safe_similar = str(context['similar_emails'])[:1500]
-    safe_incoming = incoming_email_text[:3000] if incoming_email_text else ""
-
     system_prompt = f"""
     You are an AI Email Copilot generating a draft reply on behalf of the user.
     Do NOT hallucinate facts, dates, names, or promises.
@@ -36,14 +27,14 @@ def generate_email_draft(
     {style_data}
     
     Context:
-    Thread History: {safe_thread_history}
-    Sender History: {safe_sender_history}
-    Similar Emails: {safe_similar}
+    Thread History: {context['thread_history']}
+    Sender History: {context['sender_history']}
+    Similar Emails: {context['similar_emails']}
     """
     
     user_prompt = f"""
     Incoming Email:
-    {safe_incoming}
+    {incoming_email_text}
     
     Specific Instructions:
     {instructions if instructions else 'Generate a polite and appropriate reply based on the context.'}

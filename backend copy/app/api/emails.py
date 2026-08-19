@@ -18,17 +18,13 @@ class EmailResponse(BaseModel):
     snippet: Optional[str]
     direction: str
 
-from sqlalchemy import cast, String
-
-@router.get("", response_model=List[EmailResponse])
-def get_emails(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    # For MVP, just return recent INBOX emails (assuming user 1)
-    emails = db.query(Email).filter(
-        cast(Email.labels, String).ilike('%"INBOX"%')
-    ).order_by(Email.timestamp.desc()).offset(skip).limit(limit).all()
+@router.get("/emails", response_model=List[EmailResponse])
+def get_emails(db: Session = Depends(get_db)):
+    # For MVP, just return recent emails (assuming user 1)
+    emails = db.query(Email).order_by(Email.timestamp.desc()).limit(20).all()
     return emails
 
-@router.get("/{email_id}")
+@router.get("/emails/{email_id}")
 def get_email(email_id: int, db: Session = Depends(get_db)):
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:
@@ -46,7 +42,7 @@ def get_email(email_id: int, db: Session = Depends(get_db)):
 class GenerateRequest(BaseModel):
     instructions: str = ""
 
-@router.post("/{email_id}/generate-reply")
+@router.post("/emails/{email_id}/generate-reply")
 def generate_reply(email_id: int, req: GenerateRequest, db: Session = Depends(get_db)):
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:

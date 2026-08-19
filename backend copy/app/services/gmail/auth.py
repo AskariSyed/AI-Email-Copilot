@@ -6,10 +6,7 @@ from app.core.config import settings
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.compose',
-    'https://www.googleapis.com/auth/gmail.modify',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'openid'
+    'https://www.googleapis.com/auth/gmail.modify'
 ]
 
 def get_google_auth_flow():
@@ -32,9 +29,6 @@ def get_google_auth_flow():
     flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
     return flow
 
-# In-memory store for MVP
-OAUTH_FLOW_STATE = {}
-
 def get_auth_url():
     flow = get_google_auth_flow()
     auth_url, state = flow.authorization_url(
@@ -42,12 +36,9 @@ def get_auth_url():
         include_granted_scopes='true',
         prompt='consent'
     )
-    OAUTH_FLOW_STATE[state] = getattr(flow, 'code_verifier', None)
     return auth_url, state
 
-def get_credentials_from_code(code: str, state: str = None):
+def get_credentials_from_code(code: str):
     flow = get_google_auth_flow()
-    if state and state in OAUTH_FLOW_STATE:
-        flow.code_verifier = OAUTH_FLOW_STATE[state]
     flow.fetch_token(code=code)
     return flow.credentials

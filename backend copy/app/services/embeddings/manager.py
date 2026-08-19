@@ -1,10 +1,9 @@
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 from sqlalchemy.orm import Session
 from app.models import Email, EmailChunk
 from app.core.config import settings
 
-# Load model globally to avoid reloading
-model = SentenceTransformer(settings.EMBEDDING_MODEL)
+client = OpenAI(api_key=settings.EMBEDDING_API_KEY)
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> list[str]:
     chunks = []
@@ -20,8 +19,11 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> list[st
 def embed_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
-    embeddings = model.encode(texts)
-    return embeddings.tolist()
+    response = client.embeddings.create(
+        input=texts,
+        model=settings.EMBEDDING_MODEL
+    )
+    return [data.embedding for data in response.data]
 
 def process_email_embeddings(db: Session, email: Email):
     # Skip if already chunked

@@ -58,8 +58,6 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
     results = service.users().messages().list(userId='me', maxResults=max_results).execute()
     messages = results.get('messages', [])
     
-    thread_cache = {}
-    
     for msg_meta in messages:
         msg_id = msg_meta['id']
         thread_id = msg_meta['threadId']
@@ -69,15 +67,11 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
             continue
             
         # Ensure thread exists
-        if thread_id in thread_cache:
-            thread = thread_cache[thread_id]
-        else:
-            thread = db.query(EmailThread).filter(EmailThread.gmail_thread_id == thread_id).first()
-            if not thread:
-                thread = EmailThread(gmail_account_id=account.id, gmail_thread_id=thread_id)
-                db.add(thread)
-                db.flush()
-            thread_cache[thread_id] = thread
+        thread = db.query(EmailThread).filter(EmailThread.gmail_thread_id == thread_id).first()
+        if not thread:
+            thread = EmailThread(gmail_account_id=account.id, gmail_thread_id=thread_id)
+            db.add(thread)
+            db.flush()
             
         # Fetch full message
         msg = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
@@ -93,12 +87,8 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         
         direction = "outgoing" if account.email_address in sender else "incoming"
         
-        # Extract true timestamp from Gmail's internalDate (epoch in ms)
-        internal_date = int(msg.get('internalDate', 0))
-        if internal_date > 0:
-            timestamp = datetime.fromtimestamp(internal_date / 1000.0, tz=timezone.utc)
-        else:
-            timestamp = datetime.now(timezone.utc)
+        # Approximate timestamp parsing (in prod, use dateutil.parser)
+        timestamp = datetime.now(timezone.utc)
         
         email_obj = Email(
             thread_id=thread.id,
@@ -116,11 +106,6 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
             snippet=msg.get('snippet', '')
         )
         db.add(email_obj)
-        db.flush()
-        
-        # Now chunk it and generate embeddings!
-        from app.services.embeddings.manager import process_email_embeddings
-        process_email_embeddings(db, email_obj)
         
     account.last_synced_at = datetime.now(timezone.utc)
     db.commit()

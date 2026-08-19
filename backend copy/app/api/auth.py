@@ -16,44 +16,30 @@ class AuthCallbackRequest(BaseModel):
     # For MVP, we'll hardcode a dummy user ID or pass it.
     user_id: int = 1
 
-from fastapi.responses import RedirectResponse
-
 @router.get("/google", response_model=AuthUrlResponse)
 def get_google_auth_url():
     auth_url, state = get_auth_url()
     return {"url": auth_url}
 
-@router.get("/google/callback")
-def google_auth_callback(code: str, state: str = None, db: Session = Depends(get_db)):
+@router.post("/google/callback")
+def google_auth_callback(request: AuthCallbackRequest, db: Session = Depends(get_db)):
     try:
-        credentials = get_credentials_from_code(code, state)
+        credentials = get_credentials_from_code(request.code)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid code: {str(e)}")
         
-    user_id = 1
-    
     # Ensure user exists for MVP
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == request.user_id).first()
     if not user:
-        user = User(id=user_id, email="mvp_user@example.com", name="MVP User")
+        user = User(id=request.user_id, email="mvp_user@example.com", name="MVP User")
         db.add(user)
         db.commit()
         
-    # Fetch profile info
-    from googleapiclient.discovery import build
-    service = build('oauth2', 'v2', credentials=credentials)
-    user_info = service.userinfo().get().execute()
-    fetched_email = user_info.get("email")
-    fetched_name = user_info.get("name")
-    fetched_picture = user_info.get("picture")
-
     account = db.query(GmailAccount).filter(GmailAccount.user_id == user.id).first()
     if not account:
         account = GmailAccount(
             user_id=user.id,
-            email_address=fetched_email,
-            name=fetched_name,
-            picture_url=fetched_picture,
+            email_address="linked_account@example.com", # Needs real email fetched via API
             access_token=credentials.token,
             refresh_token=credentials.refresh_token,
             token_uri=credentials.token_uri,
@@ -64,25 +50,8 @@ def google_auth_callback(code: str, state: str = None, db: Session = Depends(get
         db.add(account)
     else:
         account.access_token = credentials.token
-        account.email_address = fetched_email
-        account.name = fetched_name
-        account.picture_url = fetched_picture
         if credentials.refresh_token:
             account.refresh_token = credentials.refresh_token
             
     db.commit()
-    return RedirectResponse("http://localhost:5173/?auth=success")
-
-@router.get("/me")
-def get_current_user_profile(db: Session = Depends(get_db)):
-    user_id = 1
-    account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
-    if not account:
-        return {"connected": False}
-    
-    return {
-        "connected": True,
-        "email_address": account.email_address,
-        "name": account.name,
-        "picture_url": account.picture_url
-    }
+    return {"message": "Authentication successful"}

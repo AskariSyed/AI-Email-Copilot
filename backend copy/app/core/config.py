@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     # AI APIs
     LLM_API_KEY: str = ""
     LLM_MODEL: str = "gpt-4o-mini"
-    LLM_BASE_URL: Optional[str] = None
-    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
     
     # Security
     SECRET_KEY: str = "super_secret_temporary_key_change_in_production"

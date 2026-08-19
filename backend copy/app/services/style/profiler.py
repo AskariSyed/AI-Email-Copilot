@@ -4,10 +4,7 @@ from app.core.config import settings
 from app.models import StyleProfile, User, Email
 import json
 
-client = OpenAI(
-    api_key=settings.LLM_API_KEY,
-    base_url=settings.LLM_BASE_URL
-)
+client = OpenAI(api_key=settings.LLM_API_KEY)
 
 def generate_style_profile(db: Session, user_id: int):
     # Fetch some recent sent emails to analyze

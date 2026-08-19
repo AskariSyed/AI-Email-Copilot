@@ -18,8 +18,6 @@ class GmailAccount(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     email_address = Column(String, unique=True, index=True)
-    name = Column(String, nullable=True)
-    picture_url = Column(String, nullable=True)
     access_token = Column(String, nullable=True)
     refresh_token = Column(String, nullable=True)
     token_uri = Column(String, nullable=True)
@@ -71,7 +69,7 @@ class EmailChunk(Base):
     email_id = Column(Integer, ForeignKey("emails.id"))
     chunk_index = Column(Integer)
     text_content = Column(Text)
-    embedding = Column(Vector(384)) # sentence-transformers all-MiniLM-L6-v2 uses 384 dims
+    embedding = Column(Vector(1536)) # Assuming text-embedding-3-small (1536 dims)
     
     email = relationship("Email", back_populates="chunks")
 

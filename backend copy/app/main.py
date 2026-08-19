@@ -19,12 +19,6 @@ def root():
 
 from app.api.auth import router as auth_router
 from app.api.emails import router as emails_router
-from app.api.gmail import router as gmail_router
-from app.api.drafts import router as drafts_router
-from app.api.settings import router as settings_router
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(emails_router, prefix=f"{settings.API_V1_STR}/emails", tags=["emails"])
-app.include_router(gmail_router, prefix=f"{settings.API_V1_STR}/gmail", tags=["gmail"])
-app.include_router(drafts_router, prefix=f"{settings.API_V1_STR}/drafts", tags=["drafts"])
-app.include_router(settings_router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"])
