@@ -11,6 +11,7 @@ from app.core.scheduler import start_scheduler, stop_scheduler
 
 logger = get_logger("app.main")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -43,19 +44,31 @@ app.add_middleware(
 async def add_observability_context(request: Request, call_next):
     correlation_id = str(uuid.uuid4())
     correlation_id_var.set(correlation_id)
-    
+
     start_time = time.perf_counter()
-    
+
     try:
         response = await call_next(request)
         process_time = (time.perf_counter() - start_time) * 1000
-        logger.info(f"{request.method} {request.url.path} completed in {process_time:.2f}ms", extra={"latency_ms": process_time, "status_code": response.status_code, "path": request.url.path})
+        logger.info(
+            f"{request.method} {request.url.path} completed in {process_time:.2f}ms",
+            extra={
+                "latency_ms": process_time,
+                "status_code": response.status_code,
+                "path": request.url.path,
+            },
+        )
         response.headers["X-Correlation-ID"] = correlation_id
         return response
     except Exception as e:
         process_time = (time.perf_counter() - start_time) * 1000
-        logger.error(f"{request.method} {request.url.path} failed after {process_time:.2f}ms: {e!s}", exc_info=True, extra={"latency_ms": process_time, "path": request.url.path})
+        logger.error(
+            f"{request.method} {request.url.path} failed after {process_time:.2f}ms: {e!s}",
+            exc_info=True,
+            extra={"latency_ms": process_time, "path": request.url.path},
+        )
         raise
+
 
 @app.get("/")
 def root():

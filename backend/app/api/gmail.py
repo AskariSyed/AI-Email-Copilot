@@ -8,7 +8,6 @@ from app.services.gmail.sync import sync_emails
 router = APIRouter()
 
 
-
 @router.post("/sync")
 def trigger_sync(account_id: int | None = None, db: Session = Depends(get_db)):
     user_id = 1  # MVP hardcoded user

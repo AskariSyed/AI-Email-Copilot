@@ -31,7 +31,10 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     start_time = time.perf_counter()
     embeddings = model.encode(texts)
     latency_ms = (time.perf_counter() - start_time) * 1000
-    logger.info(f"Generated embeddings for {len(texts)} chunks in {latency_ms:.2f}ms", extra={"latency_ms": latency_ms, "chunk_count": len(texts)})
+    logger.info(
+        f"Generated embeddings for {len(texts)} chunks in {latency_ms:.2f}ms",
+        extra={"latency_ms": latency_ms, "chunk_count": len(texts)},
+    )
     return embeddings.tolist()
 
 
@@ -73,5 +76,9 @@ def process_unembedded_emails(db: Session):
         try:
             process_email_embeddings(db, email)
         except Exception as e:
-            logger.error(f"Error embedding email {email.id}: {e}", exc_info=True, extra={"email_id": email.id})
+            logger.error(
+                f"Error embedding email {email.id}: {e}",
+                exc_info=True,
+                extra={"email_id": email.id},
+            )
             db.rollback()
