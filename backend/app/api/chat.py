@@ -117,10 +117,13 @@ async def chat_with_inbox(request: ChatRequest, db: Session = Depends(get_db)):
             }
         )
 
+    # Truncate context to stay well below Groq's 8000 TPM free tier limit (~15000 chars = ~3500 tokens)
+    context_text = context_text[:15000]
+
     # 3. Call LLM
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = settings.LLM_API_KEY
     if not api_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY not set")
+        raise HTTPException(status_code=500, detail="LLM_API_KEY not set")
 
     client = AsyncGroq(api_key=api_key)
 
@@ -152,7 +155,7 @@ async def chat_with_inbox(request: ChatRequest, db: Session = Depends(get_db)):
 
     try:
         completion = await client.chat.completions.create(
-            model=os.getenv("LLM_MODEL", "llama3-8b-8192"),
+            model=settings.LLM_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

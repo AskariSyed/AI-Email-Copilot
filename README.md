@@ -110,11 +110,9 @@ For a deep dive into the implementation, please see the [Architecture Documentat
 
 ## 📸 Screenshots & Demo
 
-*(Screenshots coming soon)*
-
-| Inbox View | AI Chat Assistant | Settings & Customization |
+| Inbox Sync & Viewing | AI RAG Draft Generation | AI Chat Assistant |
 |:---:|:---:|:---:|
-| `[ Placeholder: Inbox ]` | `[ Placeholder: Chat ]` | `[ Placeholder: Settings ]` |
+| ![Inbox View](docs/assets/inbox_sync.png) | ![Draft Generation](docs/assets/rag_generation.png) | ![Chat Assistant](docs/assets/inbox_chat.png) |
 
 ---
 

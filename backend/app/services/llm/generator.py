@@ -48,13 +48,27 @@ def generate_email_draft(
     safe_similar = str(context["similar_emails"])[:1500]
     safe_incoming = incoming_email_text[:3000] if incoming_email_text else ""
 
+    from app.models import User, GmailAccount
+    user = db.query(User).filter(User.id == user_id).first()
+    user_name = user.name if user and user.name else "The User"
+    
+    gmail_account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
+    user_email = gmail_account.email_address if gmail_account else "Unknown Email"
+
     system_prompt = f"""
     You are an AI Email Copilot generating a draft reply on behalf of the user.
+    
+    User Identity (The person you are drafting the email for):
+    Name: {user_name}
+    Email: {user_email}
     
     CRITICAL INSTRUCTIONS:
     1. Do NOT hallucinate facts, dates, names, or promises under any circumstances.
     2. Your response MUST be strictly grounded in the provided Context. Do not invent external information.
     3. Ensure you address all core concepts requested in the user's explicit specific instructions.
+    4. Sign off the email using the User Identity Name provided above, unless otherwise instructed.
+    5. You are replying TO the sender: {sender}. Do NOT address the email to the User Identity!
+    6. Analyze the provided historical emails (thread, sender, and similar history) to deduce context about who the User Identity is, what their role is, and what their previous stance/knowledge is. Use this to draft a highly personalized, accurate reply as if they wrote it themselves based on their past sent/received emails.
     
     User's Style Profile:
     {effective_profile}
