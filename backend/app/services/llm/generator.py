@@ -48,11 +48,14 @@ def generate_email_draft(
     safe_similar = str(context["similar_emails"])[:1500]
     safe_incoming = incoming_email_text[:3000] if incoming_email_text else ""
 
-    from app.models import User, GmailAccount
+    from app.models import GmailAccount, User
+
     user = db.query(User).filter(User.id == user_id).first()
     user_name = user.name if user and user.name else "The User"
-    
-    gmail_account = db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
+
+    gmail_account = (
+        db.query(GmailAccount).filter(GmailAccount.user_id == user_id).first()
+    )
     user_email = gmail_account.email_address if gmail_account else "Unknown Email"
 
     system_prompt = f"""
