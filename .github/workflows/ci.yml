@@ -38,6 +38,8 @@ jobs:
         ruff format --check .
 
     - name: Test with pytest
+      env:
+        LLM_API_KEY: "dummy_api_key_for_tests"
       run: |
         python -m pytest tests/ --cov=app
 
