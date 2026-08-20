@@ -50,7 +50,7 @@ pydantic_core==2.46.4
 Pygments==2.21.0
 pyparsing==3.3.2
 pytest-cov==4.1.0
-ruff==0.1.61
+ruff>=0.6.0
 python-dotenv==1.2.3
 python-jose==3.5.0
 requests==2.34.2
