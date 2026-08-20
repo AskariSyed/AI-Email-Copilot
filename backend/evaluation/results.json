@@ -1,0 +1,57 @@
+{
+  "aggregate_metrics": {
+    "hit_rate": 1.0,
+    "mrr": 1.0,
+    "recall": 0.75,
+    "context_relevance": 5.0,
+    "groundedness": 4.0,
+    "answer_relevance": 5.0,
+    "concept_coverage": 0.5
+  },
+  "details": [
+    {
+      "id": "fresenius_funding_inquiry",
+      "retrieval": {
+        "hit_rate": 1.0,
+        "mrr": 1.0,
+        "recall": 1.0,
+        "distances": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "generation": {
+        "context_relevance": 5,
+        "groundedness": 4,
+        "answer_relevance": 5,
+        "concept_coverage": 1,
+        "reasoning": "The response directly addresses the funding query, references all required concepts, and aligns closely with the provided context, though it adds some details (e.g., Erasmus+, installment plans) not explicitly stated in the context."
+      }
+    },
+    {
+      "id": "germany_study_benefits",
+      "retrieval": {
+        "hit_rate": 1.0,
+        "mrr": 1.0,
+        "recall": 0.5,
+        "distances": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "generation": {
+        "context_relevance": 5,
+        "groundedness": 4,
+        "answer_relevance": 5,
+        "concept_coverage": 0,
+        "reasoning": "The reply heavily draws on the provided context, fully answers the query, and is mostly supported by the context, though it adds details (e.g., funding) not present. It mentions vibrant cities and culture but omits central European location and explicit state\u2011of\u2011the\u2011art campuses, so concept coverage is not complete."
+      }
+    }
+  ]
+}

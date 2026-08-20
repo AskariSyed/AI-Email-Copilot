@@ -1,8 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from pgvector.sqlalchemy import Vector
 from datetime import datetime, timezone
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -10,8 +22,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     gmail_account = relationship("GmailAccount", back_populates="user", uselist=False)
+
 
 class GmailAccount(Base):
     __tablename__ = "gmail_accounts"
@@ -28,9 +41,10 @@ class GmailAccount(Base):
     scopes = Column(String, nullable=True)
     history_id = Column(String, nullable=True)
     last_synced_at = Column(DateTime, nullable=True)
-    
+
     user = relationship("User", back_populates="gmail_account")
     threads = relationship("EmailThread", back_populates="gmail_account")
+
 
 class EmailThread(Base):
     __tablename__ = "email_threads"
@@ -39,14 +53,15 @@ class EmailThread(Base):
     gmail_thread_id = Column(String, unique=True, index=True)
     subject = Column(String, nullable=True)
     last_message_date = Column(DateTime, nullable=True)
-    
+
     gmail_account = relationship("GmailAccount", back_populates="threads")
     emails = relationship("Email", back_populates="thread")
+
 
 class Email(Base):
     __tablename__ = "emails"
     id = Column(Integer, primary_key=True, index=True)
-    thread_id = Column(Integer, ForeignKey("email_threads.id"))
+    thread_id = Column(Integer, ForeignKey("email_threads.id"), index=True)
     gmail_message_id = Column(String, unique=True, index=True)
     sender = Column(String, index=True)
     recipients = Column(String)  # JSON or comma-separated
@@ -54,26 +69,43 @@ class Email(Base):
     bcc = Column(String, nullable=True)
     subject = Column(String, nullable=True)
     timestamp = Column(DateTime, index=True)
-    labels = Column(JSON, nullable=True) # JSON array of labels like ["INBOX", "SENT"]
-    direction = Column(String) # "incoming" or "outgoing"
+    labels = Column(JSON, nullable=True)  # JSON array of labels like ["INBOX", "SENT"]
+    direction = Column(String)  # "incoming" or "outgoing"
     body = Column(Text, nullable=True)
     cleaned_body = Column(Text, nullable=True)
     snippet = Column(Text, nullable=True)
     references = Column(Text, nullable=True)
     reply_to = Column(String, nullable=True)
-    
+
     thread = relationship("EmailThread", back_populates="emails")
     chunks = relationship("EmailChunk", back_populates="email")
+
+
+from sqlalchemy import Index
+
 
 class EmailChunk(Base):
     __tablename__ = "email_chunks"
     id = Column(Integer, primary_key=True, index=True)
-    email_id = Column(Integer, ForeignKey("emails.id"))
+    email_id = Column(Integer, ForeignKey("emails.id"), index=True)
     chunk_index = Column(Integer)
     text_content = Column(Text)
-    embedding = Column(Vector(384)) # sentence-transformers all-MiniLM-L6-v2 uses 384 dims
-    
+    embedding = Column(
+        Vector(384)
+    )  # sentence-transformers all-MiniLM-L6-v2 uses 384 dims
+
     email = relationship("Email", back_populates="chunks")
+
+    __table_args__ = (
+        Index(
+            "ix_email_chunks_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
 
 class Draft(Base):
     __tablename__ = "drafts"
@@ -82,17 +114,18 @@ class Draft(Base):
     original_email_id = Column(Integer, ForeignKey("emails.id"), nullable=True)
     subject = Column(String, nullable=True)
     body = Column(Text)
-    status = Column(String) # "generated", "edited", "sent"
+    status = Column(String)  # "generated", "edited", "sent"
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     user = relationship("User")
     original_email = relationship("Email")
+
 
 class StyleProfile(Base):
     __tablename__ = "style_profiles"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    profile_data = Column(JSON) # e.g. {"formality": "...", "tone": "..."}
+    profile_data = Column(JSON)  # e.g. {"formality": "...", "tone": "..."}
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     user = relationship("User")

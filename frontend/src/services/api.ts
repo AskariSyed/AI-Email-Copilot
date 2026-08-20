@@ -119,3 +119,11 @@ export const saveSettings = async (settingsData: any) => {
   if (!response.ok) throw new Error('Failed to save settings');
   return response.json();
 };
+
+export const analyzeStyle = async () => {
+  const response = await fetch(`${API_URL}/settings/analyze-style`, {
+    method: 'POST'
+  });
+  if (!response.ok) throw new Error('Failed to analyze style');
+  return response.json();
+};

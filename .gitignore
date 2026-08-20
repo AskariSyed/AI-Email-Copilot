@@ -59,5 +59,4 @@ yarn-error.log*
 *.sln
 *.sw?
 .gemini/
-INTERVIEW_GUIDE.md
-INTERVIEW_GUIDE.pdf
+oauth_state.json

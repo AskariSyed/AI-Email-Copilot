@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchEmails, fetchEmailDetail, generateDraft, syncGmail, getAuthUrl, fetchAuthStatus, fetchDrafts, fetchSettings, saveSettings, saveDraft, sendEmailReply, chatWithInbox, fetchAccounts, type Email, type EmailDetail } from './services/api';
+import { fetchEmails, fetchEmailDetail, generateDraft, syncGmail, getAuthUrl, fetchDrafts, fetchSettings, saveSettings, saveDraft, sendEmailReply, chatWithInbox, fetchAccounts, analyzeStyle, type Email, type EmailDetail } from './services/api';
 
 function App() {
   const [activeTab, setActiveTab] = useState<"inbox" | "drafts" | "settings" | "chat">("inbox");
@@ -14,14 +14,16 @@ function App() {
   const [draftsList, setDraftsList] = useState<any[]>([]);
   
   // Settings State
-  const [settingsData, setSettingsData] = useState<any>({});
+  const [settingsData, setSettingsData] = useState<any>({ manual: {}, inferred: {} });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Copilot State
   const [draft, setDraft] = useState("");
   const [instructions, setInstructions] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [contextUsed, setContextUsed] = useState<any>(null);
   
   // Chat State
   const [chatQuery, setChatQuery] = useState("");
@@ -103,7 +105,16 @@ function App() {
   const loadSettings = async () => {
     try {
       const data = await fetchSettings();
-      setSettingsData(data.profile_data || {});
+      const profileData = data.profile_data || {};
+      if (!profileData.manual && !profileData.inferred) {
+          setSettingsData({ manual: profileData, inferred: {} });
+      } else {
+          setSettingsData({
+              manual: profileData.manual || {},
+              inferred: profileData.inferred || {},
+              last_inferred_at: profileData.last_inferred_at
+          });
+      }
     } catch (e) {
       console.error(e);
     }
@@ -119,6 +130,23 @@ function App() {
       alert("Failed to save settings");
     }
     setIsSavingSettings(false);
+  };
+
+  const handleAnalyzeStyle = async () => {
+    setIsAnalyzing(true);
+    try {
+      const data = await analyzeStyle();
+      setSettingsData({
+          manual: data.profile_data.manual || {},
+          inferred: data.profile_data.inferred || {},
+          last_inferred_at: data.profile_data.last_inferred_at
+      });
+      alert("Successfully analyzed your sent emails!");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to analyze style. Make sure you have sent emails in the database.");
+    }
+    setIsAnalyzing(false);
   };
 
   const handleConnect = async () => {
@@ -175,6 +203,7 @@ function App() {
       const data = await fetchEmailDetail(id);
       setSelectedEmail(data);
       setDraft("");
+      setContextUsed(null);
     } catch (e) {
       console.error(e);
     }
@@ -186,6 +215,7 @@ function App() {
     try {
       const res = await generateDraft(selectedEmail.id, customInstructions);
       setDraft(res.generated_body);
+      setContextUsed(res.context_used);
     } catch (e) {
       console.error(e);
       alert("Make sure the backend is running and API keys are set.");
@@ -457,6 +487,21 @@ function App() {
                           onChange={(e) => setDraft(e.target.value)}
                           placeholder="Hit Generate or type your draft here..."
                         />
+                        {contextUsed && (
+                          <div className="mt-3 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <svg className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <div>
+                              <p className="text-xs font-bold text-indigo-900 mb-1">Sources Retrieved</p>
+                              <div className="flex gap-3 text-[10px] text-slate-600 font-medium">
+                                <span>{contextUsed.thread_emails_count} thread msg(s)</span>
+                                <span>&middot;</span>
+                                <span>{contextUsed.sender_emails_count} past msg(s)</span>
+                                <span>&middot;</span>
+                                <span>{contextUsed.similar_emails_count} similar msg(s)</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-4 space-y-3 relative z-10">
@@ -569,25 +614,59 @@ function App() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">AI Style Profile</h3>
+                        <p className="text-sm text-slate-500">Train the AI to write exactly like you.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900">AI Style Profile</h3>
-                      <p className="text-sm text-slate-500">Train the AI to write exactly like you.</p>
-                    </div>
+                    <button 
+                      onClick={handleAnalyzeStyle}
+                      disabled={isAnalyzing}
+                      className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-100 transition-all disabled:opacity-50"
+                    >
+                      {isAnalyzing ? "Analyzing..." : "Analyze My Sent Emails"}
+                    </button>
                   </div>
+
+                  {settingsData.inferred && Object.keys(settingsData.inferred).length > 0 && (
+                    <div className="mb-8 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                      <h4 className="text-sm font-bold text-indigo-900 mb-3">AI Inferred Traits</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {Object.entries(settingsData.inferred).map(([key, value]) => (
+                          <div key={key} className="bg-white px-3 py-2 rounded-lg text-xs border border-indigo-50 shadow-sm flex flex-col">
+                            <span className="text-slate-400 capitalize mb-1">{key.replace(/_/g, ' ')}</span>
+                            <span className="font-semibold text-slate-700">{value as string}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-[10px] text-slate-400">Last analyzed: {settingsData.last_inferred_at ? new Date(settingsData.last_inferred_at).toLocaleString() : 'Never'}</p>
+                    </div>
+                  )}
                   
                   <div className="mb-8">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Default Instructions & Tone</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Manual Overrides & Instructions</label>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Formality Override</label>
+                        <input type="text" placeholder="e.g. Highly Professional" className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500" value={settingsData.manual?.formality || ""} onChange={e => setSettingsData({...settingsData, manual: {...settingsData.manual, formality: e.target.value}})} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Greeting Override</label>
+                        <input type="text" placeholder="e.g. Hi [Name]," className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500" value={settingsData.manual?.greeting_style || ""} onChange={e => setSettingsData({...settingsData, manual: {...settingsData.manual, greeting_style: e.target.value}})} />
+                      </div>
+                    </div>
                     <textarea 
-                      className="w-full h-40 p-4 text-sm text-slate-700 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 hover:bg-white transition-colors resize-none shadow-inner"
+                      className="w-full h-32 p-4 text-sm text-slate-700 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 hover:bg-white transition-colors resize-none shadow-inner"
                       placeholder="e.g. Keep it brief. Use bullet points. Always sign off with 'Best, [My Name]'"
-                      value={settingsData.instructions || ""}
-                      onChange={(e) => setSettingsData({ ...settingsData, instructions: e.target.value })}
+                      value={settingsData.manual?.instructions || ""}
+                      onChange={(e) => setSettingsData({ ...settingsData, manual: { ...settingsData.manual, instructions: e.target.value } })}
                     />
-                    <p className="mt-2 text-xs text-slate-500 font-medium">These instructions are automatically appended to every email you generate.</p>
+                    <p className="mt-2 text-xs text-slate-500 font-medium">These manual instructions always override the AI inferred traits.</p>
                   </div>
                   
                   <div className="flex justify-end pt-6 border-t border-slate-100">

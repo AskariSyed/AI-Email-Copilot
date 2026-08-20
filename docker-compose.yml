@@ -14,5 +14,30 @@ services:
       - pgdata:/var/lib/postgresql/data
     restart: always
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: email_copilot_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-copilot}:${POSTGRES_PASSWORD:-copilot_password}@db:5432/${POSTGRES_DB:-email_copilot}
+      # You can add LLM_API_KEY and others here or in a .env file
+    depends_on:
+      - db
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: email_copilot_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
 volumes:
   pgdata:

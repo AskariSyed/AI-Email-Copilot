@@ -1,14 +1,18 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.models import StyleProfile
-from pydantic import BaseModel
-from typing import Dict, Any
 
 router = APIRouter()
 
+
 class SettingsUpdate(BaseModel):
-    profile_data: Dict[str, Any]
+    profile_data: dict[str, Any]
+
 
 @router.get("")
 def get_settings(db: Session = Depends(get_db)):
@@ -17,6 +21,7 @@ def get_settings(db: Session = Depends(get_db)):
     if not profile:
         return {"profile_data": {}}
     return {"profile_data": profile.profile_data}
+
 
 @router.post("")
 def update_settings(req: SettingsUpdate, db: Session = Depends(get_db)):
@@ -27,7 +32,21 @@ def update_settings(req: SettingsUpdate, db: Session = Depends(get_db)):
         db.add(profile)
     else:
         profile.profile_data = req.profile_data
-        
+
     db.commit()
     db.refresh(profile)
     return {"profile_data": profile.profile_data}
+
+
+@router.post("/analyze-style")
+def analyze_style(db: Session = Depends(get_db)):
+    user_id = 1
+    from fastapi import HTTPException
+
+    from app.services.llm.profiler import infer_user_profile
+
+    try:
+        new_profile = infer_user_profile(db, user_id)
+        return {"profile_data": new_profile}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

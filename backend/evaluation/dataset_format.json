@@ -1,0 +1,22 @@
+[
+  {
+    "id": "fresenius_funding_inquiry",
+    "type": "draft",
+    "input_text": "I want to apply to Fresenius University but I need financial support. What kind of funding programs are available for international students?",
+    "sender": "info@kommunikation.hs-fresenius.de",
+    "thread_id": null,
+    "expected_chunk_ids": [5862],
+    "expected_concepts": ["DAAD", "Foundations", "Government grants", "Scholarships", "Merit-based awards"],
+    "reference_answer": "You can look into scholarships, merit-based awards, or funding programs for international students like DAAD, foundations, or government grants."
+  },
+  {
+    "id": "germany_study_benefits",
+    "type": "chat",
+    "input_text": "Why should I study in Germany and what does Fresenius University offer?",
+    "sender": "askari.syed04@gmail.com",
+    "thread_id": null,
+    "expected_chunk_ids": [5864, 5865],
+    "expected_concepts": ["Vibrant cities", "Rich culture", "Central European location", "State-of-the-art campuses"],
+    "reference_answer": "Studying in Germany offers vibrant cities, rich culture, and excellent academic standards in the heart of Europe. Fresenius University provides state-of-the-art campuses in various German cities."
+  }
+]
