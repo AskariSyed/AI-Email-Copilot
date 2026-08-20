@@ -1,7 +1,11 @@
 import logging
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.interval import IntervalTrigger
+except ImportError:  # pragma: no cover - optional dependency in lightweight environments
+    BackgroundScheduler = None
+    IntervalTrigger = None
 
 from app.core.database import SessionLocal
 from app.models import GmailAccount
@@ -9,7 +13,7 @@ from app.services.gmail.sync import sync_emails
 
 logger = logging.getLogger(__name__)
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler() if BackgroundScheduler else None
 
 
 def scheduled_sync():
@@ -32,6 +36,9 @@ def scheduled_sync():
 
 
 def start_scheduler():
+    if scheduler is None:
+        logger.warning("APScheduler is not installed; background sync scheduler is disabled.")
+        return
     if not scheduler.running:
         scheduler.add_job(
             scheduled_sync,
@@ -45,6 +52,6 @@ def start_scheduler():
 
 
 def stop_scheduler():
-    if scheduler.running:
+    if scheduler and scheduler.running:
         scheduler.shutdown()
         logger.info("Background scheduler stopped.")

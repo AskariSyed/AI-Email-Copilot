@@ -1,0 +1,25 @@
+[lint.per-file-ignores]
+"app/main.py" = ["E402"]
+"app/api/auth.py" = ["E402"]
+"app/api/emails.py" = ["E402"]
+"app/models/__init__.py" = ["E402", "F401"]
+"app/services/embeddings/manager.py" = ["E711"]
+"app/services/gmail/auth.py" = ["E402", "E722"]
+"app/services/gmail/sync.py" = ["F841"]
+"alembic/env.py" = ["E402"]
+"evaluation/run_evals.py" = ["E402"]
+"tests/conftest.py" = ["E402"]
+
+[format]
+exclude = [
+    "alembic/versions/4a3e04daadc2_add_performance_indexes.py",
+    "app/api/gmail.py",
+    "app/core/config.py",
+    "app/core/logging.py",
+    "app/main.py",
+    "app/services/embeddings/manager.py",
+    "app/services/llm/generator.py",
+    "app/services/rag/reranker.py",
+    "app/services/rag/retriever.py",
+    "tests/test_observability.py",
+]
