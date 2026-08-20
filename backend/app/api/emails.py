@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -18,9 +19,6 @@ class EmailResponse(BaseModel):
     timestamp: datetime
     snippet: str | None
     direction: str
-
-
-from sqlalchemy import String, cast
 
 
 @router.get("", response_model=list[EmailResponse])

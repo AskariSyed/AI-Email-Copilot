@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -18,9 +19,6 @@ class AuthCallbackRequest(BaseModel):
     # In a real app, you'd get the user from an auth token or session.
     # For MVP, we'll hardcode a dummy user ID or pass it.
     user_id: int = 1
-
-
-from fastapi.responses import RedirectResponse
 
 
 @router.get("/google", response_model=AuthUrlResponse)

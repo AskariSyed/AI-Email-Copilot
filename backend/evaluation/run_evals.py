@@ -6,14 +6,14 @@ from pathlib import Path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(backend_dir))
 
-from evaluate_generation import evaluate_generation
-from evaluate_retrieval import evaluate_retrieval
+from evaluate_generation import evaluate_generation  # noqa: E402
+from evaluate_retrieval import evaluate_retrieval  # noqa: E402
 
-from app.core.database import SessionLocal
-from app.models import EmailChunk, StyleProfile
-from app.services.embeddings.manager import embed_texts
-from app.services.llm.generator import generate_email_draft
-from app.services.rag.retriever import retrieve_context
+from app.core.database import SessionLocal  # noqa: E402
+from app.models import EmailChunk, StyleProfile  # noqa: E402
+from app.services.embeddings.manager import embed_texts  # noqa: E402
+from app.services.llm.generator import generate_email_draft  # noqa: E402
+from app.services.rag.retriever import retrieve_context  # noqa: E402
 
 
 def load_dataset(file_path="dataset_format.json"):

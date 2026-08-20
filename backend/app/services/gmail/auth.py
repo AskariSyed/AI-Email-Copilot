@@ -1,3 +1,6 @@
+import json
+import os
+
 import google_auth_oauthlib.flow
 
 from app.core.config import settings
@@ -33,9 +36,6 @@ def get_google_auth_flow():
     return flow
 
 
-import json
-import os
-
 STATE_FILE = "oauth_state.json"
 
 
@@ -50,7 +50,7 @@ def get_auth_url():
         try:
             with open(STATE_FILE, "r") as f:
                 state_dict = json.load(f)
-        except:
+        except (OSError, json.JSONDecodeError):
             pass
 
     state_dict[state] = getattr(flow, "code_verifier", None)

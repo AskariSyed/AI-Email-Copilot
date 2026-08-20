@@ -1,7 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import create_engine
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
@@ -10,19 +13,14 @@ from app.models import (
     User,
 )
 
-# Use an in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-from pgvector.sqlalchemy import Vector
-from sqlalchemy.ext.compiler import compiles
-
 
 @compiles(Vector, "sqlite")
 def compile_vector_sqlite(type_, compiler, **kw):
     return "TEXT"
 
 
-from sqlalchemy.pool import StaticPool
+# Use an in-memory SQLite database for testing
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

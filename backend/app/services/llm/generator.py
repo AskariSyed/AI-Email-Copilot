@@ -11,7 +11,14 @@ from app.services.rag.retriever import retrieve_context
 
 logger = get_logger("app.services.llm.generator")
 
-client = OpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
+client = None
+
+
+def get_client():
+    global client
+    if client is None:
+        client = OpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
+    return client
 
 
 def generate_email_draft(
@@ -24,7 +31,7 @@ def generate_email_draft(
 ):
     start_total_time = time.perf_counter()
     logger.info("Starting email draft generation")
-    
+
     context = retrieve_context(db, incoming_email_text, sender, thread_id)
 
     style_profile_obj = (
@@ -100,7 +107,7 @@ def generate_email_draft(
                 ],
             )
             llm_latency_ms = (time.perf_counter() - start_llm_time) * 1000
-            
+
             if response.usage:
                 token_usage["prompt_tokens"] = response.usage.prompt_tokens
                 token_usage["completion_tokens"] = response.usage.completion_tokens
@@ -110,7 +117,10 @@ def generate_email_draft(
             if "429" in str(e) or "rate_limit" in str(e).lower():
                 if attempt < max_retries - 1:
                     sleep_time = (2**attempt) * 5 + random.uniform(1, 5)
-                    logger.warning(f"Rate limited. Sleeping for {sleep_time:.2f}s before retry {attempt + 1}/{max_retries}...", extra={"attempt": attempt + 1})
+                    logger.warning(
+                        f"Rate limited. Sleeping for {sleep_time:.2f}s before retry {attempt + 1}/{max_retries}...",
+                        extra={"attempt": attempt + 1},
+                    )
                     time.sleep(sleep_time)
                 else:
                     logger.error("LLM rate limit retries exhausted", exc_info=True)
@@ -128,25 +138,28 @@ def generate_email_draft(
         or "critical instructions" in lower_answer
         or "ignore previous" in lower_answer
     ):
-        logger.warning("Drafting aborted: Potential prompt injection leakage detected.", extra={"response_snippet": answer[:100]})
+        logger.warning(
+            "Drafting aborted: Potential prompt injection leakage detected.",
+            extra={"response_snippet": answer[:100]},
+        )
         answer = "Drafting aborted: Potential prompt injection leakage detected."
 
     total_latency_ms = (time.perf_counter() - start_total_time) * 1000
-    
+
     docs_used = {
         "thread_emails_count": len(context["thread_history"]),
         "sender_emails_count": len(context["sender_history"]),
         "similar_emails_count": len(context["similar_emails"]),
     }
-    
+
     logger.info(
-        f"Generated email draft in {total_latency_ms:.2f}ms", 
+        f"Generated email draft in {total_latency_ms:.2f}ms",
         extra={
             "total_latency_ms": total_latency_ms,
             "llm_latency_ms": llm_latency_ms,
             "tokens": token_usage,
-            "context_used": docs_used
-        }
+            "context_used": docs_used,
+        },
     )
 
     return {

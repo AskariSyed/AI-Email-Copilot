@@ -109,7 +109,10 @@ def retrieve_context(
         retrieval_latency = (time.perf_counter() - start_time) * 1000
         logger.info(
             f"Vector retrieval of {len(candidate_chunks)} chunks took {retrieval_latency:.2f}ms",
-            extra={"latency_ms": retrieval_latency, "chunk_count": len(candidate_chunks)}
+            extra={
+                "latency_ms": retrieval_latency,
+                "chunk_count": len(candidate_chunks),
+            },
         )
 
         # Thread Reconstruction

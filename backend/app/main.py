@@ -11,6 +11,7 @@ from app.core.scheduler import start_scheduler, stop_scheduler
 
 logger = get_logger("app.main")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -43,32 +44,44 @@ app.add_middleware(
 async def add_observability_context(request: Request, call_next):
     correlation_id = str(uuid.uuid4())
     correlation_id_var.set(correlation_id)
-    
+
     start_time = time.perf_counter()
-    
+
     try:
         response = await call_next(request)
         process_time = (time.perf_counter() - start_time) * 1000
-        logger.info(f"{request.method} {request.url.path} completed in {process_time:.2f}ms", extra={"latency_ms": process_time, "status_code": response.status_code, "path": request.url.path})
+        logger.info(
+            f"{request.method} {request.url.path} completed in {process_time:.2f}ms",
+            extra={
+                "latency_ms": process_time,
+                "status_code": response.status_code,
+                "path": request.url.path,
+            },
+        )
         response.headers["X-Correlation-ID"] = correlation_id
         return response
     except Exception as e:
         process_time = (time.perf_counter() - start_time) * 1000
-        logger.error(f"{request.method} {request.url.path} failed after {process_time:.2f}ms: {e!s}", exc_info=True, extra={"latency_ms": process_time, "path": request.url.path})
+        logger.error(
+            f"{request.method} {request.url.path} failed after {process_time:.2f}ms: {e!s}",
+            exc_info=True,
+            extra={"latency_ms": process_time, "path": request.url.path},
+        )
         raise
+
 
 @app.get("/")
 def root():
     return {"message": "Welcome to AI Email Copilot API"}
 
 
-from app.api.auth import router as auth_router
-from app.api.chat import router as chat_router
-from app.api.drafts import router as drafts_router
-from app.api.emails import router as emails_router
-from app.api.gmail import router as gmail_router
-from app.api.send import router as send_router
-from app.api.settings import router as settings_router
+from app.api.auth import router as auth_router  # noqa: E402
+from app.api.chat import router as chat_router  # noqa: E402
+from app.api.drafts import router as drafts_router  # noqa: E402
+from app.api.emails import router as emails_router  # noqa: E402
+from app.api.gmail import router as gmail_router  # noqa: E402
+from app.api.send import router as send_router  # noqa: E402
+from app.api.settings import router as settings_router  # noqa: E402
 
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(

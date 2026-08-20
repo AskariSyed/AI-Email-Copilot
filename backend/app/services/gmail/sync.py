@@ -122,7 +122,6 @@ def sync_emails(db: Session, account_id: int, max_results: int = 50):
         headers = {h["name"].lower(): h["value"] for h in msg["payload"]["headers"]}
         sender = headers.get("from", "")
         subject = headers.get("subject", "")
-        date_str = headers.get("date", "")
         reply_to = headers.get("reply-to", None)
         references = headers.get("references", None)
 

@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Index,
     JSON,
-    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -79,9 +79,6 @@ class Email(Base):
 
     thread = relationship("EmailThread", back_populates="emails")
     chunks = relationship("EmailChunk", back_populates="email")
-
-
-from sqlalchemy import Index
 
 
 class EmailChunk(Base):

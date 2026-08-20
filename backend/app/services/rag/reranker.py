@@ -54,8 +54,12 @@ def rerank_documents(
 
     latency_ms = (time.perf_counter() - start_time) * 1000
     logger.info(
-        f"Reranking {len(documents)} candidates took {latency_ms:.2f}ms", 
-        extra={"latency_ms": latency_ms, "candidates_count": len(documents), "top_k": top_k}
+        f"Reranking {len(documents)} candidates took {latency_ms:.2f}ms",
+        extra={
+            "latency_ms": latency_ms,
+            "candidates_count": len(documents),
+            "top_k": top_k,
+        },
     )
 
     # Extract the original documents from the sorted pairs
