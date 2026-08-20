@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { fetchEmails, fetchEmailDetail, generateDraft, syncGmail, getAuthUrl, fetchDrafts, fetchSettings, saveSettings, saveDraft, sendEmailReply, chatWithInbox, fetchAccounts, analyzeStyle, type Email, type EmailDetail } from './services/api';
 
 function App() {
@@ -707,8 +708,12 @@ function App() {
                 {chatHistory.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-2xl p-5 ${msg.role === 'user' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white border border-slate-200 shadow-sm text-slate-800'}`}>
-                      <div className="prose prose-sm max-w-none">
-                        {msg.content.split('\n').map((line, i) => <p key={i} className={msg.role === 'user' ? 'text-white' : ''}>{line}</p>)}
+                      <div className={`prose prose-sm max-w-none ${msg.role === 'user' ? 'prose-invert text-white' : ''}`}>
+                        {msg.role === 'user' ? (
+                          msg.content.split('\n').map((line, i) => <p key={i} className="text-white m-0">{line}</p>)
+                        ) : (
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        )}
                       </div>
                       
                       {msg.sources && msg.sources.length > 0 && (

@@ -117,8 +117,8 @@ async def chat_with_inbox(request: ChatRequest, db: Session = Depends(get_db)):
             }
         )
 
-    # Truncate context to stay well below Groq's 8000 TPM free tier limit (~15000 chars = ~3500 tokens)
-    context_text = context_text[:15000]
+    # Truncate context to stay well below Groq's payload limit (~7500 chars)
+    context_text = context_text[:7500]
 
     # 3. Call LLM
     api_key = settings.LLM_API_KEY
